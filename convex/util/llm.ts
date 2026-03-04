@@ -29,8 +29,13 @@ export const LLM_CONFIG = {
   chatModel: 'gpt-3.5-turbo',
   embeddingModel: 'text-embedding-ada-002',
   embeddingDimension: 1536,
-   */
+  */
 };
+
+// Ollama's embedding endpoint can reject long prompts with
+// "the input length exceeds the context length". Keep a conservative cap
+// so memory summaries still embed successfully.
+const OLLAMA_EMBEDDING_MAX_CHARS = 384;
 
 function apiUrl(path: string) {
   // OPENAI_API_BASE and OLLAMA_HOST are legacy
@@ -642,18 +647,34 @@ export class ChatCompletionContent {
 }
 
 export async function ollamaFetchEmbedding(text: string) {
+  const prompt =
+    text.length > OLLAMA_EMBEDDING_MAX_CHARS
+      ? text.slice(0, OLLAMA_EMBEDDING_MAX_CHARS)
+      : text;
+  if (prompt.length !== text.length) {
+    console.warn(
+      `Truncated embedding input from ${text.length} to ${prompt.length} characters for ${LLM_CONFIG.embeddingModel}`,
+    );
+  }
   const { result } = await retryWithBackoff(async () => {
     const resp = await fetch(apiUrl('/api/embeddings'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ model: LLM_CONFIG.embeddingModel, prompt: text }),
+      body: JSON.stringify({ model: LLM_CONFIG.embeddingModel, prompt }),
     });
     if (resp.status === 404) {
       const error = await resp.text();
       await tryPullOllama(LLM_CONFIG.embeddingModel, error);
       throw new Error(`Failed to fetch embeddings: ${resp.status}`);
+    }
+    if (!resp.ok) {
+      const error = await resp.text();
+      throw {
+        retry: resp.status >= 500,
+        error: new Error(`Failed to fetch embeddings: ${resp.status}: ${error}`),
+      };
     }
     return (await resp.json()).embedding as number[];
   });

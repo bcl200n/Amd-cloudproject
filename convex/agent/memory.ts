@@ -67,7 +67,13 @@ export async function rememberConversation(
     data.conversation._creationTime,
   ).toLocaleString()}的对话: ${content}`;
   const importance = await calculateImportance(description);
-  const { embedding } = await fetchEmbedding(description);
+  let embedding: number[];
+  try {
+    ({ embedding } = await fetchEmbedding(description));
+  } catch (error) {
+    console.error('Skipping conversation memory after embedding failure', error);
+    return description;
+  }
   authors.delete(player.id as GameId<'players'>);
   await ctx.runMutation(selfInternal.insertMemory, {
     agentId,
@@ -379,24 +385,41 @@ async function reflectOnMemories(
 
   try {
     const insights = JSON.parse(reflection) as { insight: string; statementIds: number[] }[];
-    const memoriesToSave = await asyncMap(insights, async (item) => {
+    const memoriesToSave = (
+      await asyncMap(insights, async (item) => {
       const relatedMemoryIds = item.statementIds.map((idx: number) => memories[idx]._id);
       const importance = await calculateImportance(item.insight);
-      const { embedding } = await fetchEmbedding(item.insight);
-      console.debug('adding reflection memory...', item.insight);
-      return {
-        description: item.insight,
-        embedding,
-        importance,
-        relatedMemoryIds,
-      };
-    });
-
-    await ctx.runMutation(selfInternal.insertReflectionMemories, {
-      worldId,
-      playerId,
-      reflections: memoriesToSave,
-    });
+        try {
+          const { embedding } = await fetchEmbedding(item.insight);
+          console.debug('adding reflection memory...', item.insight);
+          return {
+            description: item.insight,
+            embedding,
+            importance,
+            relatedMemoryIds,
+          };
+        } catch (error) {
+          console.error('Skipping reflection memory after embedding failure', error);
+          return null;
+        }
+      })
+    ).filter(
+      (
+        memory,
+      ): memory is {
+        description: string;
+        embedding: number[];
+        importance: number;
+        relatedMemoryIds: Id<'memories'>[];
+      } => memory !== null,
+    );
+    if (memoriesToSave.length) {
+      await ctx.runMutation(selfInternal.insertReflectionMemories, {
+        worldId,
+        playerId,
+        reflections: memoriesToSave,
+      });
+    }
   } catch (e) {
     console.error('error saving or parsing reflection', e);
     console.debug('reflection', reflection);
