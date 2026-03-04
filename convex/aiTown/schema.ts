@@ -91,4 +91,15 @@ export const aiTownTables = {
     .index('worldId_ts', ['worldId', 'ts'])
     .index('worldId_type_ts', ['worldId', 'type', 'ts'])
     .index('worldId_actor_ts', ['worldId', 'actorId', 'ts']),
+
+  worldEvents: defineTable({
+    worldId: v.id('worlds'),
+    type: v.literal('earthquake'),
+    startedAt: v.number(),
+    endsAt: v.number(),
+    status: v.union(v.literal('active'), v.literal('ended')),
+    payload: v.optional(v.any()),
+  })
+    .index('worldId_type_startedAt', ['worldId', 'type', 'startedAt'])
+    .index('worldId_status_endsAt', ['worldId', 'status', 'endsAt']),
 };

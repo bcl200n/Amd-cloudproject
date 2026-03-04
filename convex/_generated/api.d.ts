@@ -58,6 +58,7 @@ import type * as util_sleep from "../util/sleep.js";
 import type * as util_types from "../util/types.js";
 import type * as util_xxhash from "../util/xxhash.js";
 import type * as world from "../world.js";
+import type * as worldEvents from "../worldEvents.js";
 
 /**
  * A utility for referencing Convex functions in your app's API.
@@ -112,6 +113,7 @@ declare const fullApi: ApiFromModules<{
   "util/types": typeof util_types;
   "util/xxhash": typeof util_xxhash;
   world: typeof world;
+  worldEvents: typeof worldEvents;
 }>;
 export declare const api: FilterApi<
   typeof fullApi,
