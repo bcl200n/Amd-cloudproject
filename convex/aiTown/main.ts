@@ -94,7 +94,7 @@ export const runStep = internalAction({
   },
   handler: async (ctx, args) => {
     try {
-      await ctx.runMutation(internal.worldEvents.reconcileEarthquakes, {
+      await ctx.runMutation(internal.worldEvents.reconcileWorldEvents, {
         worldId: args.worldId,
       });
       const { engine, gameState } = await ctx.runQuery(internal.aiTown.game.loadWorld, {

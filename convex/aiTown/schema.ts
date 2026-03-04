@@ -94,12 +94,27 @@ export const aiTownTables = {
 
   worldEvents: defineTable({
     worldId: v.id('worlds'),
-    type: v.literal('earthquake'),
+    type: v.union(v.literal('earthquake'), v.literal('city_update')),
     startedAt: v.number(),
     endsAt: v.number(),
     status: v.union(v.literal('active'), v.literal('ended')),
     payload: v.optional(v.any()),
   })
     .index('worldId_type_startedAt', ['worldId', 'type', 'startedAt'])
-    .index('worldId_status_endsAt', ['worldId', 'status', 'endsAt']),
+    .index('worldId_status_endsAt', ['worldId', 'status', 'endsAt'])
+    .index('worldId_type_status_endsAt', ['worldId', 'type', 'status', 'endsAt']),
+
+  worldEventSchedules: defineTable({
+    worldId: v.id('worlds'),
+    earthquakeIntervalMinMs: v.number(),
+    earthquakeIntervalMaxMs: v.number(),
+    earthquakeDurationMinMs: v.number(),
+    earthquakeDurationMaxMs: v.number(),
+    cityUpdateIntervalMinMs: v.number(),
+    cityUpdateIntervalMaxMs: v.number(),
+    cityUpdateDurationMinMs: v.number(),
+    cityUpdateDurationMaxMs: v.number(),
+    nextEarthquakeAt: v.number(),
+    nextCityUpdateAt: v.number(),
+  }).index('worldId', ['worldId']),
 };
