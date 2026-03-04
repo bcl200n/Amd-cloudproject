@@ -246,10 +246,9 @@ export function assertApiKey() {
 const RETRY_BACKOFF = [1000, 10_000, 20_000]; // In ms
 const RETRY_JITTER = 100; // In ms
 type RetryError = { retry: boolean; error: any };
-const LLM_MAX_CONCURRENCY = Math.max(
-  1,
-  parseInt(process.env.LLM_MAX_CONCURRENCY ?? '4', 10) || 4,
-);
+// Avoid reading environment variables at module-eval time. Convex schema
+// validation can evaluate modules in a restricted context.
+const LLM_MAX_CONCURRENCY = 4;
 let llmInFlight = 0;
 const llmWaiters: Array<() => void> = [];
 
