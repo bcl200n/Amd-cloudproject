@@ -15,6 +15,7 @@ import FreezeButton from './components/FreezeButton.tsx';
 import { MAX_HUMAN_PLAYERS } from '../convex/constants.ts';
 import PoweredByConvex from './components/PoweredByConvex.tsx';
 import { useI18n } from './i18n.tsx';
+import WorldEventsPanel from './components/WorldEventsPanel.tsx';
 
 const Game = lazy(() => import('./components/Game.tsx'));
 
@@ -80,6 +81,7 @@ export default function Home() {
         >
           <Game />
         </Suspense>
+        <WorldEventsPanel />
 
         <footer className="justify-end bottom-0 left-0 w-full flex items-center mt-4 gap-3 p-6 flex-wrap pointer-events-none">
           <div className="flex gap-4 flex-grow pointer-events-none">

@@ -47,7 +47,21 @@ type TranslationKey =
   | 'joined_conversation'
   | 'left_conversation'
   | 'typing'
-  | 'type_here';
+  | 'type_here'
+  | 'events_panel_title'
+  | 'events_panel_subtitle'
+  | 'event_earthquake'
+  | 'event_city_update'
+  | 'status_active'
+  | 'status_inactive'
+  | 'started_at'
+  | 'ends_at'
+  | 'next_at'
+  | 'interactions_in_window'
+  | 'top_event_types'
+  | 'top_actors'
+  | 'top_dyads'
+  | 'no_data';
 
 const translations: Record<Language, Record<TranslationKey, string>> = {
   en: {
@@ -95,6 +109,20 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     left_conversation: 'left the conversation.',
     typing: 'typing...',
     type_here: 'Type here',
+    events_panel_title: 'World Events',
+    events_panel_subtitle: 'Monitor short earthquakes and long city updates with interaction stats.',
+    event_earthquake: 'Earthquake',
+    event_city_update: 'City Update',
+    status_active: 'Active',
+    status_inactive: 'Inactive',
+    started_at: 'Started',
+    ends_at: 'Ends',
+    next_at: 'Next',
+    interactions_in_window: 'Interactions in current/latest window',
+    top_event_types: 'Top event types',
+    top_actors: 'Top actors',
+    top_dyads: 'Top dyads',
+    no_data: 'No data yet',
   },
   zh: {
     language_label: 'EN',
@@ -139,6 +167,20 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     left_conversation: '离开了对话。',
     typing: '输入中...',
     type_here: '在这里输入',
+    events_panel_title: '世界事件面板',
+    events_panel_subtitle: '监控短周期地震和长周期城市更新，以及窗口内交互统计。',
+    event_earthquake: '地震',
+    event_city_update: '城市更新',
+    status_active: '进行中',
+    status_inactive: '未激活',
+    started_at: '开始时间',
+    ends_at: '结束时间',
+    next_at: '下次触发',
+    interactions_in_window: '当前/最近窗口交互量',
+    top_event_types: '高频事件类型',
+    top_actors: '高活跃 agents',
+    top_dyads: '高频互动对',
+    no_data: '暂无数据',
   },
 };
 
