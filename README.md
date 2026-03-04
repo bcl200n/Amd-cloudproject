@@ -5,6 +5,35 @@
 欢迎关注我的微信公众号：
 ![](images/qrcode_for_gh_5aecbba21fec_430.jpg)
 
+## 当前维护状态（重要）
+
+本仓库当前已验证两种运行方式：
+
+1. 开发模式：`npm run dev:local`（前端 Vite + Convex 本地同步）
+2. 固化部署模式（推荐）：
+   - 前端构建产物由 `nginx` 提供（`/var/www/ai-town`）
+   - `caddy` 对外反向代理 `/ai-town/*` 和 `/api/*`
+   - `systemd` 托管 Convex backend / Convex sync / Ollama / frontend build
+
+常用入口：
+
+- 页面：`https://<你的域名>/ai-town/`
+- API（经反代）：`https://<你的域名>/api/*`
+
+文档入口：
+
+- 运行与运维手册：[docs/OPERATIONS.md](docs/OPERATIONS.md)
+- 本机部署记录（Qwen/Ollama）：[DEPLOY_LOCAL_QWEN.md](DEPLOY_LOCAL_QWEN.md)
+
+## 最近改进（已在 main）
+
+- 修复“页面打开但看不到 agents”的前端画布布局问题  
+  文件：`src/components/GameCanvas.tsx`
+- 增强 embedding 稳定性：对过长输入做截断，避免 Ollama context length 报错  
+  文件：`convex/util/llm.ts`
+- embedding 失败时降级跳过记忆，不再让 agent 流程整体中断  
+  文件：`convex/agent/memory.ts`
+
 中文版对话效果如下：
 ![](images/alice.png)
 ![](images/alex.png)
