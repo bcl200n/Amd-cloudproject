@@ -246,6 +246,30 @@ export function assertApiKey() {
 const RETRY_BACKOFF = [1000, 10_000, 20_000]; // In ms
 const RETRY_JITTER = 100; // In ms
 type RetryError = { retry: boolean; error: any };
+const LLM_MAX_CONCURRENCY = Math.max(
+  1,
+  parseInt(process.env.LLM_MAX_CONCURRENCY ?? '4', 10) || 4,
+);
+let llmInFlight = 0;
+const llmWaiters: Array<() => void> = [];
+
+async function withLLMSlot<T>(fn: () => Promise<T>): Promise<T> {
+  if (llmInFlight >= LLM_MAX_CONCURRENCY) {
+    if (llmWaiters.length > 0 && llmWaiters.length % 25 === 0) {
+      console.warn(
+        `[scale] llm queue depth=${llmWaiters.length + 1} inFlight=${llmInFlight} limit=${LLM_MAX_CONCURRENCY}`,
+      );
+    }
+    await new Promise<void>((resolve) => llmWaiters.push(resolve));
+  }
+  llmInFlight += 1;
+  try {
+    return await fn();
+  } finally {
+    llmInFlight -= 1;
+    llmWaiters.shift()?.();
+  }
+}
 
 export async function retryWithBackoff<T>(
   fn: () => Promise<T>,
@@ -254,7 +278,7 @@ export async function retryWithBackoff<T>(
   for (; i <= RETRY_BACKOFF.length; i++) {
     try {
       const start = Date.now();
-      const result = await fn();
+      const result = await withLLMSlot(fn);
       const ms = Date.now() - start;
       return { result, retries: i, ms };
     } catch (e) {

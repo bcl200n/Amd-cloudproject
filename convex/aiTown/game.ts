@@ -25,6 +25,7 @@ import { internal } from '../_generated/api';
 import { HistoricalObject } from '../engine/historicalObject';
 import { AgentDescription, serializedAgentDescription } from './agentDescription';
 import { parseMap, serializeMap } from '../util/object';
+import { MAX_ACTIVE_AGENTS_PER_TICK } from '../constants';
 
 const gameState = v.object({
   world: v.object(serializedWorld),
@@ -61,6 +62,11 @@ export class Game extends AbstractGame {
   pendingOperations: Array<{ name: string; args: any }> = [];
 
   numPathfinds: number;
+  agentTickCursor: number;
+  tickMetrics: {
+    ticks: number;
+    processedAgents: number;
+  };
 
   constructor(
     engine: Doc<'engines'>,
@@ -84,6 +90,8 @@ export class Game extends AbstractGame {
     this.historicalLocations = new Map();
 
     this.numPathfinds = 0;
+    this.agentTickCursor = 0;
+    this.tickMetrics = { ticks: 0, processedAgents: 0 };
   }
 
   static async load(
@@ -187,8 +195,23 @@ export class Game extends AbstractGame {
     for (const conversation of this.world.conversations.values()) {
       conversation.tick(this, now);
     }
-    for (const agent of this.world.agents.values()) {
+    const agents = [...this.world.agents.values()];
+    const activeBudget = Math.max(1, MAX_ACTIVE_AGENTS_PER_TICK);
+    const toProcess = Math.min(activeBudget, agents.length);
+    for (let i = 0; i < toProcess; i++) {
+      const agent = agents[(this.agentTickCursor + i) % agents.length];
       agent.tick(this, now);
+    }
+    if (agents.length > 0) {
+      this.agentTickCursor = (this.agentTickCursor + toProcess) % agents.length;
+    }
+    this.tickMetrics.ticks += 1;
+    this.tickMetrics.processedAgents += toProcess;
+    if (this.tickMetrics.ticks % 300 === 0) {
+      const avgProcessed = this.tickMetrics.processedAgents / this.tickMetrics.ticks;
+      console.log(
+        `[scale] tickMetrics ticks=${this.tickMetrics.ticks} agents=${agents.length} budget=${activeBudget} avgProcessed=${avgProcessed.toFixed(2)}`,
+      );
     }
 
     // Save each player's location into the history buffer at the end of

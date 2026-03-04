@@ -75,4 +75,8 @@ export const ENGINE_ACTION_DURATION = 30000;
 // Bound the number of pathfinding searches we do per game step.
 export const MAX_PATHFINDS_PER_STEP = 16;
 
+// Cap how many agents execute the full decision loop in a single simulation tick.
+// This is the first-stage scaling control for larger populations.
+export const MAX_ACTIVE_AGENTS_PER_TICK = 200;
+
 export const DEFAULT_NAME = 'Me';
