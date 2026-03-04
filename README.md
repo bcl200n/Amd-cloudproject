@@ -1,9 +1,6 @@
 # AI Town 🏠💻💌
 
 斯坦福AI小镇中文版，基于a16z开源项目修改，使用Ollama提供的Qwen2 7B Instruct和BGE Embedding。
-部署过程欢迎阅读微信文章：[借助Ollama部署AI小镇中文版](https://mp.weixin.qq.com/s/RHxW_2vP0Y8JS6xsTyRJnA)
-欢迎关注我的微信公众号：
-![](images/qrcode_for_gh_5aecbba21fec_430.jpg)
 
 ## 当前维护状态（重要）
 
