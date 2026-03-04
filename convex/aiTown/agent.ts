@@ -23,6 +23,21 @@ import { internal } from '../_generated/api';
 import { movePlayer } from './movement';
 import { insertInput } from './insertInput';
 
+function earthquakeEvacuationDestination(game: Game, player: { position: { x: number; y: number } }) {
+  const margin = 2;
+  const minX = margin;
+  const maxX = Math.max(margin, game.worldMap.width - 1 - margin);
+  const minY = margin;
+  const maxY = Math.max(margin, game.worldMap.height - 1 - margin);
+
+  const moveToLeftEdge = player.position.x < game.worldMap.width / 2;
+  const moveToTopEdge = player.position.y < game.worldMap.height / 2;
+  return {
+    x: moveToLeftEdge ? minX : maxX,
+    y: moveToTopEdge ? minY : maxY,
+  };
+}
+
 export class Agent {
   id: GameId<'agents'>;
   playerId: GameId<'players'>;
@@ -53,6 +68,26 @@ export class Agent {
     const player = game.world.players.get(this.playerId);
     if (!player) {
       throw new Error(`Invalid player ID ${this.playerId}`);
+    }
+    if (game.isEarthquakeActive(now)) {
+      const conversation = game.world.playerConversation(player);
+      if (conversation) {
+        conversation.leave(game, now, player);
+      }
+      const destination = earthquakeEvacuationDestination(game, player);
+      const needsNewRoute =
+        !player.pathfinding ||
+        player.pathfinding.destination.x !== destination.x ||
+        player.pathfinding.destination.y !== destination.y;
+      if (needsNewRoute) {
+        movePlayer(game, now, player, destination, true);
+        game.logEvent({
+          type: 'earthquake_evacuation_started',
+          actorId: player.id,
+          payload: { destination },
+        });
+      }
+      return;
     }
     if (this.inProgressOperation) {
       if (now < this.inProgressOperation.started + ACTION_TIMEOUT) {

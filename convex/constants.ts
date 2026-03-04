@@ -78,5 +78,6 @@ export const MAX_PATHFINDS_PER_STEP = 16;
 // Cap how many agents execute the full decision loop in a single simulation tick.
 // This is the first-stage scaling control for larger populations.
 export const MAX_ACTIVE_AGENTS_PER_TICK = 200;
+export const EARTHQUAKE_EVASION_SPEED_MULTIPLIER = 2.5;
 
 export const DEFAULT_NAME = 'Me';

@@ -25,13 +25,23 @@ import { internal } from '../_generated/api';
 import { HistoricalObject } from '../engine/historicalObject';
 import { AgentDescription, serializedAgentDescription } from './agentDescription';
 import { parseMap, serializeMap } from '../util/object';
-import { MAX_ACTIVE_AGENTS_PER_TICK } from '../constants';
+import { EARTHQUAKE_EVASION_SPEED_MULTIPLIER, MAX_ACTIVE_AGENTS_PER_TICK } from '../constants';
 
 const gameState = v.object({
   world: v.object(serializedWorld),
   playerDescriptions: v.array(v.object(serializedPlayerDescription)),
   agentDescriptions: v.array(v.object(serializedAgentDescription)),
   worldMap: v.object(serializedWorldMap),
+  eventContext: v.optional(
+    v.object({
+      earthquake: v.optional(
+        v.object({
+          active: v.boolean(),
+          endsAt: v.number(),
+        }),
+      ),
+    }),
+  ),
 });
 type GameState = Infer<typeof gameState>;
 
@@ -69,6 +79,12 @@ export class Game extends AbstractGame {
   worldMap: WorldMap;
   playerDescriptions: Map<GameId<'players'>, PlayerDescription>;
   agentDescriptions: Map<GameId<'agents'>, AgentDescription>;
+  eventContext: {
+    earthquake?: {
+      active: boolean;
+      endsAt: number;
+    };
+  };
 
   pendingOperations: Array<{ name: string; args: any }> = [];
   pendingSocialEvents: Array<{
@@ -106,6 +122,7 @@ export class Game extends AbstractGame {
       PlayerDescription,
       (p) => p.playerId,
     );
+    this.eventContext = state.eventContext ?? {};
 
     this.historicalLocations = new Map();
 
@@ -161,6 +178,15 @@ export class Game extends AbstractGame {
       worldId: _mapWorldId,
       ...worldMap
     } = worldMapDoc;
+    const activeEarthquakeRows = await db
+      .query('worldEvents')
+      .withIndex('worldId_type_status_endsAt', (q) =>
+        q.eq('worldId', worldId).eq('type', 'earthquake').eq('status', 'active'),
+      )
+      .collect();
+    const now = Date.now();
+    const activeEarthquake = activeEarthquakeRows.find((e) => e.endsAt > now);
+
     return {
       engine,
       gameState: {
@@ -168,6 +194,14 @@ export class Game extends AbstractGame {
         playerDescriptions,
         agentDescriptions,
         worldMap,
+        eventContext: activeEarthquake
+          ? {
+              earthquake: {
+                active: true,
+                endsAt: activeEarthquake.endsAt,
+              },
+            }
+          : {},
       },
     };
   }
@@ -180,6 +214,14 @@ export class Game extends AbstractGame {
 
   scheduleOperation(name: string, args: unknown) {
     this.pendingOperations.push({ name, args });
+  }
+
+  isEarthquakeActive(now: number = Date.now()) {
+    return !!this.eventContext.earthquake?.active && this.eventContext.earthquake.endsAt > now;
+  }
+
+  movementSpeedMultiplier(now: number = Date.now()) {
+    return this.isEarthquakeActive(now) ? EARTHQUAKE_EVASION_SPEED_MULTIPLIER : 1;
   }
 
   logEvent(event: {
