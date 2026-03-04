@@ -41,6 +41,17 @@ const gameStateDiff = v.object({
   agentDescriptions: v.optional(v.array(v.object(serializedAgentDescription))),
   worldMap: v.optional(v.object(serializedWorldMap)),
   agentOperations: v.array(v.object({ name: v.string(), args: v.any() })),
+  socialEvents: v.array(
+    v.object({
+      ts: v.number(),
+      type: v.string(),
+      actorId: v.optional(v.string()),
+      targetId: v.optional(v.string()),
+      conversationId: v.optional(v.string()),
+      operationId: v.optional(v.string()),
+      payload: v.optional(v.any()),
+    }),
+  ),
 });
 type GameStateDiff = Infer<typeof gameStateDiff>;
 
@@ -60,6 +71,15 @@ export class Game extends AbstractGame {
   agentDescriptions: Map<GameId<'agents'>, AgentDescription>;
 
   pendingOperations: Array<{ name: string; args: any }> = [];
+  pendingSocialEvents: Array<{
+    ts: number;
+    type: string;
+    actorId?: string;
+    targetId?: string;
+    conversationId?: string;
+    operationId?: string;
+    payload?: any;
+  }> = [];
 
   numPathfinds: number;
   agentTickCursor: number;
@@ -162,6 +182,20 @@ export class Game extends AbstractGame {
     this.pendingOperations.push({ name, args });
   }
 
+  logEvent(event: {
+    type: string;
+    actorId?: string;
+    targetId?: string;
+    conversationId?: string;
+    operationId?: string;
+    payload?: any;
+  }) {
+    this.pendingSocialEvents.push({
+      ts: Date.now(),
+      ...event,
+    });
+  }
+
   handleInput<Name extends InputNames>(now: number, name: Name, args: InputArgs<Name>) {
     const handler = inputs[name]?.handler;
     if (!handler) {
@@ -259,8 +293,10 @@ export class Game extends AbstractGame {
     const result: GameStateDiff = {
       world: { ...this.world.serialize(), historicalLocations },
       agentOperations: this.pendingOperations,
+      socialEvents: this.pendingSocialEvents,
     };
     this.pendingOperations = [];
+    this.pendingSocialEvents = [];
     if (this.descriptionsModified) {
       result.playerDescriptions = serializeMap(this.playerDescriptions);
       result.agentDescriptions = serializeMap(this.agentDescriptions);
@@ -362,6 +398,19 @@ export class Game extends AbstractGame {
       } else {
         await ctx.db.insert('maps', { worldId, ...worldMap });
       }
+    }
+    // Persist social events for analysis.
+    for (const event of diff.socialEvents) {
+      await ctx.db.insert('socialEvents', {
+        worldId,
+        ts: event.ts,
+        type: event.type,
+        actorId: event.actorId,
+        targetId: event.targetId,
+        conversationId: event.conversationId,
+        operationId: event.operationId,
+        payload: event.payload,
+      });
     }
     // Start the desired agent operations.
     for (const operation of diff.agentOperations) {

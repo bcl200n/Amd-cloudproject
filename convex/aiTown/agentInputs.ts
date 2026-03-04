@@ -28,6 +28,14 @@ export const agentInputs = {
         console.debug(`Agent ${agentId} isn't remembering ${args.operationId}`);
       } else {
         delete agent.inProgressOperation;
+        if (agent.toRemember) {
+          game.logEvent({
+            type: 'conversation_remembered',
+            actorId: agent.playerId,
+            conversationId: agent.toRemember,
+            operationId: args.operationId,
+          });
+        }
         delete agent.toRemember;
       }
       return null;
@@ -62,13 +70,31 @@ export const agentInputs = {
         if (!invitee) {
           throw new Error(`Couldn't find player: ${inviteeId}`);
         }
+        game.logEvent({
+          type: 'invite_attempted',
+          actorId: player.id,
+          targetId: invitee.id,
+          operationId: args.operationId,
+        });
         Conversation.start(game, now, player, invitee);
         agent.lastInviteAttempt = now;
       }
       if (args.destination) {
+        game.logEvent({
+          type: 'agent_move_planned',
+          actorId: player.id,
+          operationId: args.operationId,
+          payload: { destination: args.destination },
+        });
         movePlayer(game, now, player, args.destination);
       }
       if (args.activity) {
+        game.logEvent({
+          type: 'agent_activity_started',
+          actorId: player.id,
+          operationId: args.operationId,
+          payload: { activity: args.activity },
+        });
         player.activity = args.activity;
       }
       return null;
@@ -110,7 +136,19 @@ export const agentInputs = {
         conversationId: args.conversationId,
         timestamp: args.timestamp,
       });
+      game.logEvent({
+        type: 'message_delivery_finished',
+        actorId: player.id,
+        conversationId,
+        operationId: args.operationId,
+      });
       if (args.leaveConversation) {
+        game.logEvent({
+          type: 'conversation_leave_requested',
+          actorId: player.id,
+          conversationId,
+          operationId: args.operationId,
+        });
         conversation.leave(game, now, player);
       }
       return null;

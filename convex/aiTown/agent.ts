@@ -248,6 +248,19 @@ export class Agent {
     }
     const operationId = game.allocId('operations');
     console.log(`Agent ${this.id} starting operation ${name} (${operationId})`);
+    const operationArgs = args as {
+      playerId?: string;
+      otherPlayerId?: string;
+      conversationId?: string;
+    };
+    game.logEvent({
+      type: 'agent_operation_started',
+      actorId: operationArgs.playerId,
+      targetId: operationArgs.otherPlayerId,
+      conversationId: operationArgs.conversationId,
+      operationId,
+      payload: { name },
+    });
     game.scheduleOperation(name, { operationId, ...args } as any);
     this.inProgressOperation = {
       name,
@@ -322,6 +335,18 @@ export const agentSendMessage = internalMutation({
       text: args.text,
       messageUuid: args.messageUuid,
       worldId: args.worldId,
+    });
+    await ctx.db.insert('socialEvents', {
+      worldId: args.worldId,
+      ts: Date.now(),
+      type: 'message_sent',
+      actorId: args.playerId,
+      conversationId: args.conversationId,
+      operationId: args.operationId,
+      payload: {
+        chars: args.text.length,
+        leaveConversation: args.leaveConversation,
+      },
     });
     await insertInput(ctx, args.worldId, 'agentFinishSendingMessage', {
       conversationId: args.conversationId,

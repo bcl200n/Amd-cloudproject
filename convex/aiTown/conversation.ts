@@ -149,6 +149,13 @@ export class Conversation {
         ],
       }),
     );
+    game.logEvent({
+      type: 'conversation_started',
+      actorId: player.id,
+      targetId: invitee.id,
+      conversationId,
+      payload: { created: now },
+    });
     return { conversationId };
   }
 
@@ -173,6 +180,11 @@ export class Conversation {
       );
     }
     member.status = { kind: 'walkingOver' };
+    game.logEvent({
+      type: 'invite_accepted',
+      actorId: player.id,
+      conversationId: this.id,
+    });
   }
 
   rejectInvite(game: Game, now: number, player: Player) {
@@ -187,6 +199,12 @@ export class Conversation {
         )}`,
       );
     }
+    game.logEvent({
+      type: 'invite_rejected',
+      actorId: player.id,
+      conversationId: this.id,
+      payload: { at: now },
+    });
     this.stop(game, now);
   }
 
@@ -199,6 +217,12 @@ export class Conversation {
         agent.toRemember = this.id;
       }
     }
+    const participants = [...this.participants.keys()];
+    game.logEvent({
+      type: 'conversation_stopped',
+      conversationId: this.id,
+      payload: { at: now, participants },
+    });
     game.world.conversations.delete(this.id);
   }
 

@@ -76,4 +76,19 @@ export const aiTownTables = {
     .index('edge', ['worldId', 'player1', 'player2', 'ended'])
     .index('conversation', ['worldId', 'player1', 'conversationId'])
     .index('playerHistory', ['worldId', 'player1', 'ended']),
+
+  // Append-only social interaction events for emergent behavior analysis.
+  socialEvents: defineTable({
+    worldId: v.id('worlds'),
+    ts: v.number(),
+    type: v.string(),
+    actorId: v.optional(v.string()),
+    targetId: v.optional(v.string()),
+    conversationId: v.optional(conversationId),
+    operationId: v.optional(v.string()),
+    payload: v.optional(v.any()),
+  })
+    .index('worldId_ts', ['worldId', 'ts'])
+    .index('worldId_type_ts', ['worldId', 'type', 'ts'])
+    .index('worldId_actor_ts', ['worldId', 'actorId', 'ts']),
 };
